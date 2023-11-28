@@ -1,23 +1,11 @@
-FROM maven:3.8.5-openjdk-17 AS build
-WORKDIR /usr/src/app
+FROM maven:3.8.4-openjdk-11 as baseImage
+WORKDIR /app
 COPY pom.xml .
-RUN mvn dependency:go-offline -B
-COPY src /usr/src/app/src
+COPY src ./src
 RUN mvn clean package
 
-
-FROM eclipse-temurin:17.0.5_8-jre
-
-# Set working directory
-ENV HOME=/opt/app
-WORKDIR $HOME
-
-# Expose the port on which your service will run
+FROM openjdk:11-slim
+WORKDIR /app
+COPY --from=baseImage /app/target/*.jar ./app.jar
 EXPOSE 8080
-
-# NOTE we assume there's only 1 jar in the target dir
-COPY --from=build /usr/src/app/target/*.jar $HOME/artifacts/app.jar
-
-USER 1001
-
-ENTRYPOINT exec java $JAVA_OPTS -jar artifacts/app.jar
+CMD ["java", "-jar", "app.jar"]
